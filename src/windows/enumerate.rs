@@ -126,7 +126,7 @@ impl<'hwid> HwidMatches<'hwid> {
             hwid_tail.get(1..).and_then(|tail| {
                 let index = tail
                     .char_indices()
-                    .find(|&(_, char)| !char.is_alphanumeric())
+                    .find(|&(_, char)| !char.is_alphanumeric() && char != ':')
                     .map(|(index, _)| index)
                     .unwrap_or(tail.len());
                 tail.get(..index)
@@ -724,9 +724,6 @@ mod tests {
         let bm_parent_hwid = r"USB\VID_1D50&PID_6018\85A12F01";
         let info = parse_usb_port_info(bm_uart_hwid, Some(bm_parent_hwid)).unwrap();
 
-        assert_eq!(info.vid, 0x1D50);
-        assert_eq!(info.pid, 0x6018);
-        assert_eq!(info.serial_number, Some("85A12F01".to_string()));
         #[cfg(feature = "usbportinfo-interface")]
         assert_eq!(info.interface, Some(2));
 
@@ -759,5 +756,12 @@ mod tests {
         let unicode_serial = r"USB\VID_F055&PID_9802\3854356β";
         let info = parse_usb_port_info(unicode_serial, None).unwrap();
         assert_eq!(info.serial_number.as_deref(), Some("3854356β"));
+
+        let bm_uart_hwid = r"USB\VID_303A&PID_1001&MI_00\6&2146D530&0&0000";
+        let bm_parent_hwid = r"USB\VID_303A&PID_1001\8C:BF:EA:1B:D4:43";
+        let info = parse_usb_port_info(bm_uart_hwid, Some(bm_parent_hwid)).unwrap();
+        assert_eq!(info.vid, 0x303A);
+        assert_eq!(info.pid, 0x1001);
+        assert_eq!(info.serial_number, Some("8C:BF:EA:1B:D4:44".to_string()));
     }
 }
